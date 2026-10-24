@@ -1,0 +1,8 @@
+node_modules/
+__pycache__/
+*.pyc
+stockfish/
+sf.tar
+seed.log
+package.json
+package-lock.json

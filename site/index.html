@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coach fbiquard</title>
+<meta name="description" content="Entrenador personal de ajedrez: tus partidas de chess.com analizadas, tus errores convertidos en ejercicios.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect width='8' height='8' fill='%23e9ecd9'/%3E%3Cpath d='M0 0h1v1H0zM2 0h1v1H2zM4 0h1v1H4zM6 0h1v1H6zM1 1h1v1H1zM3 1h1v1H3zM5 1h1v1H5zM7 1h1v1H7zM0 2h1v1H0zM2 2h1v1H2zM4 2h1v1H4zM6 2h1v1H6zM1 3h1v1H1zM3 3h1v1H3zM5 3h1v1H5zM7 3h1v1H7zM0 4h1v1H0zM2 4h1v1H2zM4 4h1v1H4zM6 4h1v1H6zM1 5h1v1H1zM3 5h1v1H3zM5 5h1v1H5zM7 5h1v1H7zM0 6h1v1H0zM2 6h1v1H2zM4 6h1v1H4zM6 6h1v1H6zM1 7h1v1H1zM3 7h1v1H3zM5 7h1v1H5zM7 7h1v1H7z' fill='%2386a77c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="vendor/chessground.base.css">
+<link rel="stylesheet" href="vendor/chessground.cburnett.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="#repaso"><span class="mark" aria-hidden="true"></span>Coach <span class="user">fbiquard</span></a>
+    <nav class="tabs" aria-label="Secciones">
+      <a href="#repaso" data-tab="repaso">Repaso</a>
+      <a href="#partidas" data-tab="partidas">Partidas</a>
+      <a href="#diagnostico" data-tab="diagnostico">Diagnóstico</a>
+    </nav>
+  </div>
+</header>
+<main id="app" class="wrap" aria-live="polite">
+  <p class="loading">Cargando tus partidas…</p>
+</main>
+<footer class="foot wrap">
+  <span id="updated"></span>
+  <span>Análisis con Stockfish. Se actualiza solo cada 2 horas desde chess.com.</span>
+</footer>
+<script type="module" src="app.js"></script>
+</body>
+</html>
