@@ -50,11 +50,12 @@ def write(r):
         import anthropic
         client = anthropic.Anthropic(api_key=key)
         msg = client.messages.create(
-            model=MODEL, max_tokens=400, system=SYSTEM,
+            model=MODEL, max_tokens=2000, system=SYSTEM,
             messages=[{"role": "user", "content": json.dumps(facts(r), ensure_ascii=False)}])
         text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
-        if text:
-            return dict(text=text, source="claude")
+        if text and msg.stop_reason == "end_turn":
+            return dict(text=text, source="claude", v=2)
+        print("Claude: respuesta incompleta, uso plantilla:", msg.stop_reason)
     except Exception as exc:  # si falla la API, no frenamos el pipeline
         print("advice: falló Claude:", exc)
     return dict(text=template(r), source="plantilla")

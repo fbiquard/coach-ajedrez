@@ -173,11 +173,12 @@ def explain(r, median_loss):
             import anthropic
             from advice import MODEL
             msg = anthropic.Anthropic(api_key=key).messages.create(
-                model=MODEL, max_tokens=400, system=SYSTEM,
+                model=MODEL, max_tokens=2000, system=SYSTEM,
                 messages=[{"role": "user", "content": json.dumps(facts(r, median_loss), ensure_ascii=False)}])
             text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
-            if text:
-                return dict(text=text, source="claude")
+            if text and msg.stop_reason == "end_turn":
+                return dict(text=text, source="claude", v=2)
+            print("Claude: respuesta incompleta, uso plantilla:", msg.stop_reason)
         except Exception as exc:
             print("best: falló Claude:", exc)
     return dict(text=template(r, median_loss), source="plantilla")

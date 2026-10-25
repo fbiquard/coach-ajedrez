@@ -128,7 +128,7 @@ def update_best(engine_factory, limit):
         for r in ranked:
             want_claude = bool(os.environ.get("ANTHROPIC_API_KEY"))
             cur = r.get("best_why") or {}
-            if cur and (cur.get("source") == "claude" or not want_claude):
+            if cur and ((cur.get("source") == "claude" and cur.get("v") == 2) or not want_claude):
                 continue
             r["best_why"] = best.explain(r, median_loss)
             save(r)
@@ -178,7 +178,7 @@ def backfill_advice(limit):
     done = 0
     for f in files:
         r = json.loads(f.read_text())
-        if (r.get("advice") or {}).get("source") == "claude":
+        if (r.get("advice") or {}).get("source") == "claude" and r["advice"].get("v") == 2:
             continue
         r["advice"] = advice.write(r)
         f.write_text(json.dumps(r, separators=(",", ":"), ensure_ascii=False))
