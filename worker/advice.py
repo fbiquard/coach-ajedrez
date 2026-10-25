@@ -10,7 +10,8 @@ Te paso los datos de una partida ya analizada con Stockfish. Reglas:
 - No calcules variantes ni inventes jugadas: usá solo las jugadas y líneas que aparecen en los datos.
 - Contá qué decidió la partida (el momento clave) y dejá UN hábito concreto para la próxima.
 - Si ganó gracias a errores del rival, decilo.
-- Máximo 3 oraciones cortas, en un solo párrafo, sin listas ni títulos. Usá notación en inglés (N, B, R, Q, K) como en los datos."""
+- Máximo 3 oraciones cortas, en un solo párrafo, sin listas ni títulos. Usá notación en inglés (N, B, R, Q, K) como en los datos.
+Números: porcentajes redondeados a enteros, coma decimal, y nada de métricas técnicas como "pérdida media": decilo en palabras ("casi sin imprecisiones", "el doble de preciso que de costumbre")."""
 
 RES = {"W": "ganó", "D": "empató", "L": "perdió"}
 
@@ -54,7 +55,7 @@ def write(r):
             messages=[{"role": "user", "content": json.dumps(facts(r), ensure_ascii=False)}])
         text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
         if text and msg.stop_reason == "end_turn":
-            return dict(text=text, source="claude", v=2)
+            return dict(text=text, source="claude", v=3)
         print("Claude: respuesta incompleta, uso plantilla:", msg.stop_reason)
     except Exception as exc:  # si falla la API, no frenamos el pipeline
         print("advice: falló Claude:", exc)

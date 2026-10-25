@@ -128,7 +128,8 @@ Escribís en castellano rioplatense, directo, sin elogios vacíos ni exageracion
 Te paso los datos de una de sus mejores partidas, ya analizada con Stockfish. Explicá por qué es una de sus mejores:
 qué hizo bien, cuál fue la jugada o decisión clave y qué hábito suyo hay que repetir.
 No calcules ni inventes jugadas: usá solo las que aparecen en los datos, en notación inglesa (N, B, R, Q, K).
-Máximo 3 oraciones, un solo párrafo, sin listas ni títulos."""
+Máximo 3 oraciones, un solo párrafo, sin listas ni títulos.
+Números: porcentajes redondeados a enteros, coma decimal, y nada de métricas técnicas como "pérdida media": decilo en palabras ("casi sin imprecisiones", "el doble de preciso que de costumbre")."""
 
 
 def facts(r, median_loss):
@@ -177,7 +178,7 @@ def explain(r, median_loss):
                 messages=[{"role": "user", "content": json.dumps(facts(r, median_loss), ensure_ascii=False)}])
             text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
             if text and msg.stop_reason == "end_turn":
-                return dict(text=text, source="claude", v=2)
+                return dict(text=text, source="claude", v=3)
             print("Claude: respuesta incompleta, uso plantilla:", msg.stop_reason)
         except Exception as exc:
             print("best: falló Claude:", exc)
