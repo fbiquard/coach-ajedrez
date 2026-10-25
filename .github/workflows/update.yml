@@ -42,7 +42,7 @@ jobs:
 
       - name: Analizar partidas nuevas
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || secrets.AJEDREZ }}
           CHESS_USER: fbiquard
           MAX_GAMES: "25"
           THINK: "0.15"

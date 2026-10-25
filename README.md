@@ -22,7 +22,7 @@ site/            la web estática; site/data la genera el worker
 
 ## Puesta en marcha
 
-1. **Secret**: Settings → Secrets and variables → Actions → New repository secret → `ANTHROPIC_API_KEY`.
+1. **Secret**: Settings → Secrets and variables → Actions → New repository secret → `ANTHROPIC_API_KEY` (también se acepta `AJEDREZ`).
 2. **Pages**: Settings → Pages → Source: **GitHub Actions**.
 3. **Primera corrida**: Actions → "Actualizar partidas" → Run workflow.
 4. **Dominio propio (opcional)**: Settings → Pages → Custom domain → `ajedrez.biquard.com`, y en el DNS de biquard.com un CNAME `ajedrez` → `fbiquard.github.io`.

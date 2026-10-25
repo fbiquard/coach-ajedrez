@@ -211,6 +211,7 @@ def main():
         return Engine(float(os.environ.get("THINK", "0.15")))
     n_hl, n_exp = update_best(make_engine, int(os.environ.get("BEST_BACKFILL", "15")))
     n, np_ = rebuild_site()
+    print("Claude:", "con API key" if os.environ.get("ANTHROPIC_API_KEY") else "SIN API key (consejos de plantilla)")
     print(f"web: {n} partidas, {np_} puzzles, {n_adv} consejos reescritos con Claude, "
           f"{n_hl} partidas revisadas para mejores, {n_exp} explicaciones")
 
