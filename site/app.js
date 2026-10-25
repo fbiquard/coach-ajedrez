@@ -2,7 +2,7 @@ import { Chessground } from './vendor/chessground.js';
 import { Chess } from './vendor/chess.js';
 
 const app = document.getElementById('app');
-const state = { index: null, puzzles: null, games: {}, filter: 'todas', diag: 'rapid' };
+const state = { index: null, puzzles: null, games: {}, filter: 'todas', diag: 'rapid', bestTc: 'rapid', planTc: 'rapid' };
 
 // ---------- utilidades ----------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -339,12 +339,98 @@ function viewDiag() {
   app.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => { state.diag = b.dataset.t; viewDiag(); }));
 }
 
+// ---------- mejores partidas ----------
+function miniBoard(el, fen, uci) {
+  const turn = new Chess(fen).turn() === 'w' ? 'white' : 'black';
+  const cg = Chessground(el, { fen, orientation: turn, viewOnly: true, coordinates: false });
+  if (uci) cg.setAutoShapes([{ orig: uci.slice(0, 2), dest: uci.slice(2, 4), brush: 'green' }]);
+}
+
+function viewMejores() {
+  setTab('mejores');
+  const B = state.index.best || {};
+  const tcs = Object.keys(B).filter((t) => B[t].length);
+  if (!tcs.length) { app.innerHTML = '<div class="card empty"><h2>Todavía no hay mejores partidas</h2><p class="muted">Aparecen cuando el análisis termina de revisar tus partidas candidatas.</p></div>'; return; }
+  if (!tcs.includes(state.bestTc)) state.bestTc = tcs[0];
+  const list = B[state.bestTc];
+  app.innerHTML = `
+    <section class="head"><p class="eyebrow">Mejores partidas</p><h1>Lo que hacés bien</h1>
+      <p class="lede">Ordenadas por precisión, nivel del rival y jugadas difíciles encontradas: sacrificios correctos y jugadas únicas. Una victoria fácil contra alguien que regaló todo no entra.</p></section>
+    <div class="chips" role="group" aria-label="Ritmo">${tcs.map((t) => `<button type="button" class="chip ${t === state.bestTc ? 'on' : ''}" data-t="${t}">${TC[t]}</button>`).join('')}</div>
+    <div class="list">${list.map((g, i) => {
+      const h = g.highlights[0];
+      return `
+      <article class="card best">
+        <div class="mini-board" data-i="${i}"></div>
+        <div class="best-side">
+          <span class="rank">#${i + 1} · ${fmtDateLong(g.date)} · ${esc(g.tc)}</span>
+          <a class="best-title" href="#partida/${g.id}" style="color:var(--ink);text-decoration:none">${RES_TXT[g.outcome]} con ${g.color === 'white' ? 'blancas' : 'negras'} vs ${esc(g.opp || 'rival')} (${g.opp_rating})</a>
+          <div class="chips">${g.tags.map((t) => `<span class="tag good">${esc(t)}</span>`).join('')}</div>
+          <p class="best-why">${esc(g.why)}</p>
+          ${g.highlights.length ? `<div class="hl-list">${g.highlights.map((x) => `<span>${x.type === 'sacrificio' ? 'Sacrificio' : 'Jugada única'}: <b>${x.move_no}${g.color === 'white' ? '.' : '…'}${esc(x.san)}</b> · ${esc(x.line)}</span>`).join('')}</div>` : ''}
+          <p style="font-size:.85rem"><a href="#partida/${g.id}">Ver la partida</a> · <a href="${esc(g.url)}" target="_blank" rel="noopener">chess.com ↗</a></p>
+        </div>
+      </article>`; }).join('')}</div>`;
+  app.querySelectorAll('.mini-board').forEach((el) => {
+    const g = list[+el.dataset.i];
+    const h = g.highlights[0];
+    if (h) miniBoard(el, h.fen, h.uci);
+    else el.remove();
+  });
+  app.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => { state.bestTc = b.dataset.t; viewMejores(); }));
+}
+
+// ---------- plan ----------
+function fmtMetric(v, unit) {
+  if (v == null) return '–';
+  const s = Number.isInteger(v) ? String(v) : dec(v, v < 1 ? 2 : 1);
+  return s + (unit || '');
+}
+
+function recCard(r) {
+  const m = r.metric;
+  const trend = m.before == null ? '' : (m.better === 'lower' ? (m.now < m.before ? 'up' : m.now > m.before ? 'down' : '') : (m.now > m.before ? 'up' : m.now < m.before ? 'down' : ''));
+  return `
+  <article class="card rec">
+    <div class="rec-head"><h2>${esc(r.title)}</h2><span class="tag">${esc(r.area)}</span></div>
+    <p class="why">${esc(r.why)}</p>
+    <p class="rule">${esc(r.rule)}</p>
+    <ul class="res">${r.resources.map((x) => `<li><span>${x.url ? `<a href="${esc(x.url)}"${x.url.startsWith('#') ? '' : ' target="_blank" rel="noopener"'}>${esc(x.name)}${x.url.startsWith('#') ? '' : ' ↗'}</a>` : esc(x.name)}</span><span class="dose">${esc(x.dose)}</span></li>`).join('')}</ul>
+    <div class="meter">
+      <div><span class="v">${fmtMetric(m.before, m.unit)}</span><span class="l">30 partidas anteriores</span></div>
+      <div><span class="v ${trend}">${fmtMetric(m.now, m.unit)}</span><span class="l">últimas 30 partidas</span></div>
+      <div><span class="v">${m.better === 'lower' ? '≤ ' : '≥ '}${fmtMetric(m.target, m.unit)}</span><span class="l">objetivo</span></div>
+    </div>
+    <p class="muted" style="font-size:.8rem">${esc(m.label[0].toUpperCase() + m.label.slice(1))}. Se recalcula con cada partida nueva.</p>
+  </article>`;
+}
+
+function viewPlan() {
+  setTab('plan');
+  const P = state.index.plan || {};
+  const tcs = Object.keys(P);
+  if (!tcs.length) { app.innerHTML = '<div class="card empty"><h2>Todavía no hay plan</h2><p class="muted">Hacen falta al menos 10 partidas de un ritmo.</p></div>'; return; }
+  if (!tcs.includes(state.planTc)) state.planTc = tcs[0];
+  const p = P[state.planTc];
+  app.innerHTML = `
+    <section class="head"><p class="eyebrow">Plan de entrenamiento · ${TC[state.planTc]}</p>
+      <h1>${p.focus.length ? (p.focus.length === 1 ? 'Tu foco para las próximas 4 semanas' : `Tus ${p.focus.length} focos para las próximas 4 semanas`) : 'Nada urgente para entrenar'}</h1>
+      <p class="lede">Sale de tus errores reales. Cada foco trae una regla para aplicar en la partida, recursos concretos y una métrica: si en 30 partidas no mejora, el plan cambia.</p></section>
+    <div class="chips" role="group" aria-label="Ritmo">${tcs.map((t) => `<button type="button" class="chip ${t === state.planTc ? 'on' : ''}" data-t="${t}">${TC[t]}</button>`).join('')}</div>
+    <div class="list">${p.focus.map(recCard).join('')}</div>
+    ${p.later.length ? `<section class="head"><h2>Después</h2><p class="muted">También aparecen en tus datos, con menos peso. Encaralos cuando los de arriba lleguen al objetivo.</p></section>
+      <div class="later">${p.later.map((r) => `<div class="card later-row"><span><b>${esc(r.title)}</b> <span class="muted">· ${esc(r.why)}</span></span><span class="tag">${esc(r.area)}</span></div>`).join('')}</div>` : ''}`;
+  app.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => { state.planTc = b.dataset.t; viewPlan(); }));
+}
+
 // ---------- ruteo ----------
 function route() {
   const h = location.hash.replace('#', '') || 'repaso';
   window.scrollTo(0, 0);
   if (h.startsWith('partida/')) return viewPartida(h.slice(8));
   if (h === 'partidas') return viewPartidas();
+  if (h === 'mejores') return viewMejores();
+  if (h === 'plan') return viewPlan();
   if (h === 'diagnostico') return viewDiag();
   return viewRepaso();
 }

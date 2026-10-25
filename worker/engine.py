@@ -54,6 +54,19 @@ class Engine:
             node = nxt
         return plies
 
+    def multipv(self, fen, n=2, think=0.25):
+        """Las n mejores jugadas: lista de (uci, cp desde el bando que mueve, pv en uci)."""
+        b = chess.Board(fen)
+        me = b.turn
+        out = []
+        for inf in self.eng.analyse(b, chess.engine.Limit(time=think), multipv=n):
+            if not inf.get("pv"):
+                continue
+            s = inf["score"].pov(me)
+            cp = 10000 - 10 * s.mate() if s.is_mate() and s.mate() > 0 else (-10000 if s.is_mate() else s.score())
+            out.append((inf["pv"][0].uci(), cp, [m.uci() for m in inf["pv"][:6]]))
+        return out
+
     def solutions(self, fen, tolerance_cp=60, think=0.6):
         """Jugadas que valen como solución: la mejor y las que quedan muy cerca."""
         b = chess.Board(fen)

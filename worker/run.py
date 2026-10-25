@@ -17,7 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import advice  # noqa: E402
+import best  # noqa: E402
 import game_report  # noqa: E402
+import plan  # noqa: E402
 import stats  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -88,6 +90,69 @@ def finish(meta, plies, engine=None):
     return r
 
 
+def save(r):
+    (REPORTS / f"{r['id']}.json").write_text(json.dumps(r, separators=(",", ":"), ensure_ascii=False))
+
+
+def update_best(engine_factory, limit):
+    """Busca jugadas destacadas en las candidatas a mejores partidas y explica las que entran al top."""
+    reports = [json.loads(f.read_text()) for f in REPORTS.glob("*.json")]
+    eng = None
+    done = 0
+    for tc in ("rapid", "blitz"):
+        pool = [r for r in reports if r["time_class"] == tc and best.base_score(r) is not None]
+        pool.sort(key=lambda r: -best.base_score(r))
+        for r in pool[:best.CANDIDATES]:
+            if r.get("hl_done") or done >= limit:
+                continue
+            ev = EVALS / f"{r['id']}.json"
+            if not ev.exists():
+                continue
+            if eng is None:
+                eng = engine_factory()
+            r["highlights"] = best.find_highlights(r, json.loads(ev.read_text())["plies"], eng)
+            r["hl_done"] = True
+            save(r)
+            done += 1
+    if eng:
+        eng.close()
+    # explicaciones para el top de cada ritmo
+    reports = [json.loads(f.read_text()) for f in REPORTS.glob("*.json")]
+    n_exp = 0
+    for tc in ("rapid", "blitz"):
+        pool = [r for r in reports if r["time_class"] == tc]
+        losses = [best.avg_loss(r) for r in pool if r.get("moves")]
+        median_loss = sorted(losses)[len(losses) // 2] if losses else 3
+        ranked = sorted([r for r in pool if best.score(r) is not None and r.get("hl_done")],
+                        key=lambda r: -best.score(r))[:best.TOP]
+        for r in ranked:
+            want_claude = bool(os.environ.get("ANTHROPIC_API_KEY"))
+            cur = r.get("best_why") or {}
+            if cur and (cur.get("source") == "claude" or not want_claude):
+                continue
+            r["best_why"] = best.explain(r, median_loss)
+            save(r)
+            n_exp += 1
+    return done, n_exp
+
+
+def best_list(reports):
+    out = {}
+    for tc in ("rapid", "blitz"):
+        pool = [r for r in reports if r["time_class"] == tc]
+        losses = [best.avg_loss(r) for r in pool if r.get("moves")]
+        median_loss = sorted(losses)[len(losses) // 2] if losses else 3
+        ranked = sorted([r for r in pool if best.score(r) is not None and r.get("hl_done")],
+                        key=lambda r: -best.score(r))[:best.TOP]
+        out[tc] = [dict(summary(r), score=best.score(r), why=(r.get("best_why") or {}).get("text", ""),
+                        why_source=(r.get("best_why") or {}).get("source", ""),
+                        tags=best.tags(r, median_loss),
+                        highlights=[{k: h[k] for k in ("type", "move_no", "san", "uci", "fen", "line", "wb", "second")}
+                                    for h in r.get("highlights") or []][:3])
+                   for r in ranked]
+    return out
+
+
 def rebuild_site():
     reports = [json.loads(f.read_text()) for f in REPORTS.glob("*.json")]
     reports.sort(key=lambda r: -r["date"])
@@ -100,7 +165,7 @@ def rebuild_site():
             puzzles.append(dict(p, game=r["id"], date=r["date"], time_class=r["time_class"], color=r["color"],
                                 url=r["url"], opp=r["opp"]))
     index = dict(user=USER, updated=int(time.time()), games=[summary(r) for r in reports],
-                 stats=stats.build(reports))
+                 stats=stats.build(reports), best=best_list(reports), plan=plan.build(reports))
     (SITE / "index.json").write_text(json.dumps(index, separators=(",", ":"), ensure_ascii=False))
     (SITE / "puzzles.json").write_text(json.dumps(puzzles, separators=(",", ":"), ensure_ascii=False))
     return len(reports), len(puzzles)
@@ -140,8 +205,14 @@ def main():
         finally:
             eng.close()
     n_adv = backfill_advice(int(os.environ.get("ADVICE_BACKFILL", "10")))
+
+    def make_engine():
+        from engine import Engine
+        return Engine(float(os.environ.get("THINK", "0.15")))
+    n_hl, n_exp = update_best(make_engine, int(os.environ.get("BEST_BACKFILL", "15")))
     n, np_ = rebuild_site()
-    print(f"web: {n} partidas, {np_} puzzles, {n_adv} consejos reescritos con Claude")
+    print(f"web: {n} partidas, {np_} puzzles, {n_adv} consejos reescritos con Claude, "
+          f"{n_hl} partidas revisadas para mejores, {n_exp} explicaciones")
 
 
 if __name__ == "__main__":
