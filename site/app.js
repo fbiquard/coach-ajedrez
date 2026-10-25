@@ -395,7 +395,7 @@ function recCard(r) {
     <div class="rec-head"><h2>${esc(r.title)}</h2><span class="tag">${esc(r.area)}</span></div>
     <p class="why">${esc(r.why)}</p>
     <p class="rule">${esc(r.rule)}</p>
-    <ul class="res">${r.resources.map((x) => `<li><span>${x.url ? `<a href="${esc(x.url)}"${x.url.startsWith('#') ? '' : ' target="_blank" rel="noopener"'}>${esc(x.name)}${x.url.startsWith('#') ? '' : ' ↗'}</a>` : esc(x.name)}</span><span class="dose">${esc(x.dose)}</span></li>`).join('')}</ul>
+    <ul class="reslist">${r.resources.map((x) => `<li><span>${x.url ? `<a href="${esc(x.url)}"${x.url.startsWith('#') ? '' : ' target="_blank" rel="noopener"'}>${esc(x.name)}${x.url.startsWith('#') ? '' : ' ↗'}</a>` : esc(x.name)}</span><span class="dose">${esc(x.dose)}</span></li>`).join('')}</ul>
     <div class="meter">
       <div><span class="v">${fmtMetric(m.before, m.unit)}</span><span class="l">30 partidas anteriores</span></div>
       <div><span class="v ${trend}">${fmtMetric(m.now, m.unit)}</span><span class="l">últimas 30 partidas</span></div>

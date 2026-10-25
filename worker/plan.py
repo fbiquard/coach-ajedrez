@@ -189,7 +189,7 @@ def for_class(reports, tc):
                 id="reloj", area="Reloj", title="Usar el reloj",
                 why=f"Pensás {str(sp).replace('.', ',')} segundos por jugada (mediana, desde la jugada 9): rapid jugado a ritmo de blitz.",
                 rule="Desde la jugada 10, mínimo 20 segundos por jugada, usados en el chequeo de jaques, capturas y amenazas.",
-                resources=[dict(name="Jugá 15+10 en lugar de 10+0", url=None, dose="durante estas 4 semanas")],
+                resources=[dict(name="Jugá 15+10 o más largo", url=None, dose="durante estas 4 semanas")],
                 metric=_metric("segundos por jugada (mediana)", sp, _median_spent(before), 20, "higher", "s"),
                 weight=(15 - sp) / 3 + 1))
 
